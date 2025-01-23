@@ -39,5 +39,5 @@ func Verify(token string, publicKey *ecdsa.PublicKey) (int64, error) {
 	}
 
 	claims := parsed.Claims.(jwt.MapClaims)
-	return claims["uid"].(int64), nil
+	return int64(claims["uid"].(float64)), nil
 }
