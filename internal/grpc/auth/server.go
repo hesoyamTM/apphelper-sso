@@ -3,8 +3,9 @@ package auth
 import (
 	"context"
 	"errors"
-	"sso/internal/models"
-	"sso/internal/services"
+
+	"github.com/hesoyamTM/apphelper-sso/internal/models"
+	"github.com/hesoyamTM/apphelper-sso/internal/services"
 
 	ssov1 "github.com/hesoyamTM/apphelper-protos/gen/go/sso"
 	"google.golang.org/grpc"

@@ -1,10 +1,14 @@
 package key
 
 import (
+	"context"
 	"crypto/ecdsa"
+	"crypto/x509"
+	"encoding/pem"
 	"log/slog"
 	"time"
 
+	"github.com/hesoyamTM/apphelper-sso/internal/clients/report"
 	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 )
 
@@ -16,32 +20,39 @@ type App struct {
 	publicKey  *ecdsa.PublicKey
 
 	privateKeyChan chan *ecdsa.PrivateKey
+
+	reportClient report.Client
 }
 
-func New(log *slog.Logger, updInterval time.Duration) *App {
+func New(log *slog.Logger, updInterval time.Duration, repCLient report.Client) *App {
 	privKeyChan := make(chan *ecdsa.PrivateKey, 1)
 
 	return &App{
+		log: log,
+
 		updateInterval: updInterval,
 		privateKeyChan: privKeyChan,
+		reportClient:   repCLient,
 	}
 }
 
 func (k *App) Run() {
 	for {
-		//k.log.Info("generating a new key pair")
+		k.log.Info("generating a new key pair")
 		privkey, pubKey, err := jwt.GenerateKeys()
 		if err != nil {
 			k.log.Error("failed to generate keys")
 		}
-		//k.log.Info("generated")
+		k.log.Info("generated")
 
 		k.privateKey = privkey
 		k.publicKey = pubKey
 
-		//fmt.Println(encode(privkey, pubKey))
-
-		//TODO: send public key to others microservices
+		err = k.reportClient.SetPublicKey(context.Background(), encode(pubKey))
+		if err != nil {
+			k.log.Error(err.Error())
+		}
+		k.log.Info("public key has been sent to other services")
 
 		k.privateKeyChan <- privkey
 		<-time.After(k.updateInterval)
@@ -56,15 +67,12 @@ func (k *App) GetPrivateKeyChan() <-chan *ecdsa.PrivateKey {
 	return k.privateKeyChan
 }
 
-// func encode(privateKey *ecdsa.PrivateKey, publicKey *ecdsa.PublicKey) (string, string) {
-// 	x509Encoded, _ := x509.MarshalECPrivateKey(privateKey)
-// 	pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: x509Encoded})
+func encode(publicKey *ecdsa.PublicKey) string {
+	x509EncodedPub, _ := x509.MarshalPKIXPublicKey(publicKey)
+	pemEncodedPub := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: x509EncodedPub})
 
-// 	x509EncodedPub, _ := x509.MarshalPKIXPublicKey(publicKey)
-// 	pemEncodedPub := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: x509EncodedPub})
-
-// 	return string(pemEncoded), string(pemEncodedPub)
-// }
+	return string(pemEncodedPub)
+}
 
 // func decode(pemEncoded string, pemEncodedPub string) (*ecdsa.PrivateKey, *ecdsa.PublicKey) {
 // 	block, _ := pem.Decode([]byte(pemEncoded))

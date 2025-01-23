@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/hesoyamTM/apphelper-sso/internal/app"
+	"github.com/hesoyamTM/apphelper-sso/internal/clients/report"
 	"github.com/hesoyamTM/apphelper-sso/internal/config"
 )
 
@@ -40,8 +41,18 @@ func main() {
 		Password: cfg.Redis.Password,
 	}
 
-	application := app.New(log, gOpts, pOpts, rOpts, cfg.KeysUpdateInterval)
+	repClient, err := report.New(log, cfg.Report.Addr)
+	if err != nil {
+		panic(err)
+	}
+
+	cOpts := app.Clients{
+		ReportClient: repClient,
+	}
+
+	application := app.New(log, gOpts, pOpts, rOpts, cOpts, cfg.KeysUpdateInterval)
 	go application.GRPCApp.MustRun()
+	go application.KGApp.Run()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)

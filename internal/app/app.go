@@ -6,6 +6,7 @@ import (
 
 	grpcapp "github.com/hesoyamTM/apphelper-sso/internal/app/grpc"
 	"github.com/hesoyamTM/apphelper-sso/internal/app/key"
+	"github.com/hesoyamTM/apphelper-sso/internal/clients/report"
 	"github.com/hesoyamTM/apphelper-sso/internal/services/auth"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/psql"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/redis"
@@ -37,7 +38,11 @@ type RedisOpts struct {
 	Password string
 }
 
-func New(log *slog.Logger, grpcOpts GrpcOpts, psqlOpts PsqlOpts, rOpts RedisOpts, updInterval time.Duration) *App {
+type Clients struct {
+	ReportClient *report.Client
+}
+
+func New(log *slog.Logger, grpcOpts GrpcOpts, psqlOpts PsqlOpts, rOpts RedisOpts, clients Clients, updInterval time.Duration) *App {
 	psqlDB, err := psql.New(psqlOpts.User, psqlOpts.Password, psqlOpts.Host, psqlOpts.DB, psqlOpts.Port)
 	if err != nil {
 		panic(err)
@@ -45,8 +50,7 @@ func New(log *slog.Logger, grpcOpts GrpcOpts, psqlOpts PsqlOpts, rOpts RedisOpts
 
 	rDB := redis.New(rOpts.Host, rOpts.Password, rOpts.Port)
 
-	kgApp := key.New(log, updInterval)
-	go kgApp.Run()
+	kgApp := key.New(log, updInterval, *clients.ReportClient)
 
 	authService := auth.New(
 		log,
@@ -60,7 +64,7 @@ func New(log *slog.Logger, grpcOpts GrpcOpts, psqlOpts PsqlOpts, rOpts RedisOpts
 	grpcApp := grpcapp.New(log, authService, grpcOpts.Host, grpcOpts.Port)
 
 	return &App{
-
+		KGApp:   kgApp,
 		GRPCApp: grpcApp,
 	}
 }

@@ -15,6 +15,7 @@ type Config struct {
 	Grpc               GRPC          `yaml:"grpc"`
 	Psql               PSQL          `yaml:"psql"`
 	Redis              Redis         `yaml:"redis"`
+	Report             ReportClient  `yaml:"report_client"`
 }
 
 type GRPC struct {
@@ -36,6 +37,10 @@ type Redis struct {
 	Host     string `yaml:"host" env-required:"true"`
 	Port     int    `yaml:"port" env-required:"true"`
 	Password string `yaml:"password" env-required:"true"`
+}
+
+type ReportClient struct {
+	Addr string `yaml:"addr" env-required:"true"`
 }
 
 func MustLoad() *Config {

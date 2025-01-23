@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"sso/internal/grpc/auth"
+
+	"github.com/hesoyamTM/apphelper-sso/internal/grpc/auth"
 
 	"google.golang.org/grpc"
 )

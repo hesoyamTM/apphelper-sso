@@ -42,7 +42,7 @@ func (i *ServerInterceptor) Unary() grpc.UnaryServerInterceptor {
 
 		uidCtx, err := i.authorize(ctx, info.FullMethod)
 		if err != nil {
-			return nil, status.Error(codes.Internal, "internal error")
+			return nil, err
 		}
 
 		return handler(uidCtx, req)
@@ -56,17 +56,20 @@ func (i *ServerInterceptor) authorize(ctx context.Context, method string) (conte
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
+		i.log.Error("metadata is not provided")
 		return nil, status.Errorf(codes.Unauthenticated, "metadata is not provided")
 	}
 
 	values := md["auth"]
 	if len(values) == 0 {
+		i.log.Error("authorization token is not provided")
 		return nil, status.Error(codes.Unauthenticated, "authorization token is not provided")
 	}
 
 	accessToken := values[0]
 	uid, err := jwt.Verify(accessToken, i.publicKey)
 	if err != nil {
+		i.log.Error("access token is invalid", slog.String("Error", err.Error()))
 		return nil, status.Error(codes.Unauthenticated, "access token is invalid")
 	}
 
