@@ -60,7 +60,7 @@ func (i *ServerInterceptor) authorize(ctx context.Context, method string) (conte
 		return nil, status.Errorf(codes.Unauthenticated, "metadata is not provided")
 	}
 
-	values := md["auth"]
+	values := md["Authorization"]
 	if len(values) == 0 {
 		i.log.Error("authorization token is not provided")
 		return nil, status.Error(codes.Unauthenticated, "authorization token is not provided")
