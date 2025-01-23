@@ -1,4 +1,4 @@
-module sso
+module github.com/hesoyamTM/apphelper-sso
 
 go 1.23.4
 
