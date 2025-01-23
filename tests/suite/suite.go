@@ -3,10 +3,11 @@ package suite
 import (
 	"context"
 	"net"
-	"sso/internal/config"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/hesoyamTM/apphelper-sso/internal/config"
 
 	ssov1 "github.com/hesoyamTM/apphelper-protos/gen/go/sso"
 	"google.golang.org/grpc"

@@ -2,8 +2,9 @@ package jwt
 
 import (
 	"crypto/ecdsa"
-	"sso/internal/models"
 	"time"
+
+	"github.com/hesoyamTM/apphelper-sso/internal/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"

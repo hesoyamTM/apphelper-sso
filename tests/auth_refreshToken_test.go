@@ -1,9 +1,10 @@
 package tests
 
 import (
-	"sso/tests/suite"
 	"testing"
 	"time"
+
+	"github.com/hesoyamTM/apphelper-sso/tests/suite"
 
 	"github.com/brianvoe/gofakeit"
 	ssov1 "github.com/hesoyamTM/apphelper-protos/gen/go/sso"

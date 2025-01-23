@@ -4,9 +4,10 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"sso/internal/app"
-	"sso/internal/config"
 	"syscall"
+
+	"github.com/hesoyamTM/apphelper-sso/internal/app"
+	"github.com/hesoyamTM/apphelper-sso/internal/config"
 )
 
 const (

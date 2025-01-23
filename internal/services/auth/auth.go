@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"sso/internal/models"
-	"sso/internal/services"
-	"sso/internal/storage"
-	"sso/pkg/lib/jwt"
 	"time"
+
+	"github.com/hesoyamTM/apphelper-sso/internal/models"
+	"github.com/hesoyamTM/apphelper-sso/internal/services"
+	"github.com/hesoyamTM/apphelper-sso/internal/storage"
+	"github.com/hesoyamTM/apphelper-sso/pkg/lib/jwt"
 
 	"golang.org/x/crypto/bcrypt"
 )

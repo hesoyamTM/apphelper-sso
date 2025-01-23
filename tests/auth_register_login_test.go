@@ -4,9 +4,10 @@ import (
 	"crypto/ecdsa"
 	"crypto/x509"
 	"encoding/pem"
-	"sso/tests/suite"
 	"testing"
 	"time"
+
+	"github.com/hesoyamTM/apphelper-sso/tests/suite"
 
 	"github.com/brianvoe/gofakeit"
 	"github.com/golang-jwt/jwt/v5"

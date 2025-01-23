@@ -3,8 +3,9 @@ package key
 import (
 	"crypto/ecdsa"
 	"log/slog"
-	"sso/pkg/lib/jwt"
 	"time"
+
+	"github.com/hesoyamTM/apphelper-sso/pkg/lib/jwt"
 )
 
 type App struct {

@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sso/internal/models"
-	"sso/internal/storage"
 	"strings"
+
+	"github.com/hesoyamTM/apphelper-sso/internal/models"
+	"github.com/hesoyamTM/apphelper-sso/internal/storage"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"

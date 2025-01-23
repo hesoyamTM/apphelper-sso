@@ -4,8 +4,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"log/slog"
-	"sso/pkg/lib/jwt"
 	"strconv"
+
+	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

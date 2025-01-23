@@ -2,12 +2,13 @@ package app
 
 import (
 	"log/slog"
-	grpcapp "sso/internal/app/grpc"
-	"sso/internal/app/key"
-	"sso/internal/services/auth"
-	"sso/internal/storage/psql"
-	"sso/internal/storage/redis"
 	"time"
+
+	grpcapp "github.com/hesoyamTM/apphelper-sso/internal/app/grpc"
+	"github.com/hesoyamTM/apphelper-sso/internal/app/key"
+	"github.com/hesoyamTM/apphelper-sso/internal/services/auth"
+	"github.com/hesoyamTM/apphelper-sso/internal/storage/psql"
+	"github.com/hesoyamTM/apphelper-sso/internal/storage/redis"
 )
 
 type App struct {
