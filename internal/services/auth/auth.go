@@ -8,10 +8,10 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 	"github.com/hesoyamTM/apphelper-sso/internal/models"
 	"github.com/hesoyamTM/apphelper-sso/internal/services"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage"
-	"github.com/hesoyamTM/apphelper-sso/pkg/lib/jwt"
 
 	"golang.org/x/crypto/bcrypt"
 )

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/hesoyamTM/apphelper-sso/pkg/lib/jwt"
+	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 )
 
 type App struct {

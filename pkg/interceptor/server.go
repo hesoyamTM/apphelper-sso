@@ -38,6 +38,7 @@ func NewServer(log *slog.Logger, authMethods map[string]bool, pubKeyCh <-chan *e
 
 func (i *ServerInterceptor) Unary() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+		i.log.Debug(info.FullMethod)
 
 		uidCtx, err := i.authorize(ctx, info.FullMethod)
 		if err != nil {
