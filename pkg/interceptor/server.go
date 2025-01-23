@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"log/slog"
 	"strconv"
+	"strings"
 
 	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 
@@ -60,13 +61,13 @@ func (i *ServerInterceptor) authorize(ctx context.Context, method string) (conte
 		return nil, status.Errorf(codes.Unauthenticated, "metadata is not provided")
 	}
 
-	values := md["authorization"]
-	if len(values) == 0 {
+	bearerToken := md["authorization"]
+	if len(bearerToken) == 0 {
 		i.log.Error("authorization token is not provided")
 		return nil, status.Error(codes.Unauthenticated, "authorization token is not provided")
 	}
 
-	accessToken := values[0]
+	accessToken := strings.Split(bearerToken[0], " ")[1]
 	uid, err := jwt.Verify(accessToken, i.publicKey)
 	if err != nil {
 		i.log.Error("access token is invalid", slog.String("Error", err.Error()))
