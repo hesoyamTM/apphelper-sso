@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"log/slog"
-	"sso/internal/lib/jwt"
+	"sso/pkg/lib/jwt"
 	"strconv"
 
 	"google.golang.org/grpc"

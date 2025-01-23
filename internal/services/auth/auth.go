@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"sso/internal/lib/jwt"
 	"sso/internal/models"
 	"sso/internal/services"
 	"sso/internal/storage"
+	"sso/pkg/lib/jwt"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
