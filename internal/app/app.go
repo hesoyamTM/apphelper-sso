@@ -1,0 +1,65 @@
+package app
+
+import (
+	"log/slog"
+	grpcapp "sso/internal/app/grpc"
+	"sso/internal/app/key"
+	"sso/internal/services/auth"
+	"sso/internal/storage/psql"
+	"sso/internal/storage/redis"
+	"time"
+)
+
+type App struct {
+	KGApp   *key.App
+	GRPCApp *grpcapp.App
+}
+
+type GrpcOpts struct {
+	Host            string
+	Port            int
+	AccessTokenTTL  time.Duration
+	RefreshTokenTTL time.Duration
+}
+
+type PsqlOpts struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+	DB       string
+}
+
+type RedisOpts struct {
+	Host     string
+	Port     int
+	Password string
+}
+
+func New(log *slog.Logger, grpcOpts GrpcOpts, psqlOpts PsqlOpts, rOpts RedisOpts, updInterval time.Duration) *App {
+	psqlDB, err := psql.New(psqlOpts.User, psqlOpts.Password, psqlOpts.Host, psqlOpts.DB, psqlOpts.Port)
+	if err != nil {
+		panic(err)
+	}
+
+	rDB := redis.New(rOpts.Host, rOpts.Password, rOpts.Port)
+
+	kgApp := key.New(log, updInterval)
+	go kgApp.Run()
+
+	authService := auth.New(
+		log,
+		psqlDB,
+		rDB,
+		grpcOpts.AccessTokenTTL,
+		grpcOpts.RefreshTokenTTL,
+		kgApp.GetPrivateKeyChan(),
+	)
+
+	grpcApp := grpcapp.New(log, authService, grpcOpts.Host, grpcOpts.Port)
+
+	return &App{
+
+		GRPCApp: grpcApp,
+	}
+}
