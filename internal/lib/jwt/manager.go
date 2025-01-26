@@ -2,12 +2,17 @@ package jwt
 
 import (
 	"crypto/ecdsa"
+	"errors"
 	"time"
 
 	"github.com/hesoyamTM/apphelper-sso/internal/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+)
+
+var (
+	ErrUnauthorized = errors.New("unauthorized")
 )
 
 func NewTokens(user models.UserInfo, duration time.Duration, prKey *ecdsa.PrivateKey) (models.JWTokens, error) {
@@ -39,5 +44,10 @@ func Verify(token string, publicKey *ecdsa.PublicKey) (int64, error) {
 	}
 
 	claims := parsed.Claims.(jwt.MapClaims)
+
+	if int64(claims["exp"].(float64)) < time.Now().Unix() {
+		return 0, ErrUnauthorized
+	}
+
 	return int64(claims["uid"].(float64)), nil
 }

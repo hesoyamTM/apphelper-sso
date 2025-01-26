@@ -12,10 +12,13 @@ import (
 type Config struct {
 	Env                string        `yaml:"env" env-required:"true"`
 	KeysUpdateInterval time.Duration `yaml:"keys_update_interval" env-required:"true"`
-	Grpc               GRPC          `yaml:"grpc"`
-	Psql               PSQL          `yaml:"psql"`
-	Redis              Redis         `yaml:"redis"`
-	Report             ReportClient  `yaml:"report_client"`
+
+	Grpc  GRPC  `yaml:"grpc"`
+	Psql  PSQL  `yaml:"psql"`
+	Redis Redis `yaml:"redis"`
+
+	Report   ReportClient   `yaml:"report_client"`
+	Schedule ScheduleClient `yaml:"schedule_client"`
 }
 
 type GRPC struct {
@@ -43,6 +46,10 @@ type ReportClient struct {
 	Addr string `yaml:"addr" env-required:"true"`
 }
 
+type ScheduleClient struct {
+	Addr string `yaml:"addr" env-required:"true"`
+}
+
 func MustLoad() *Config {
 	cfgPath := fetchConfigPath()
 
@@ -58,7 +65,7 @@ func MustLoadByPath(cfgPath string) *Config {
 
 	if _, err := os.Stat(cfgPath); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			panic("file does not exists: " + cfgPath)
+			panic("file does not exist: " + cfgPath)
 		}
 		panic(err)
 	}

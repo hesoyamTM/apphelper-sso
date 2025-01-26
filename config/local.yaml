@@ -21,3 +21,6 @@ redis:
 
 report_client:
   addr: "localhost:49102"
+
+schedule_client:
+  addr: "localhost:49104"

@@ -7,6 +7,7 @@ import (
 	grpcapp "github.com/hesoyamTM/apphelper-sso/internal/app/grpc"
 	"github.com/hesoyamTM/apphelper-sso/internal/app/key"
 	"github.com/hesoyamTM/apphelper-sso/internal/clients/report"
+	"github.com/hesoyamTM/apphelper-sso/internal/clients/schedule"
 	"github.com/hesoyamTM/apphelper-sso/internal/services/auth"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/psql"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/redis"
@@ -39,7 +40,8 @@ type RedisOpts struct {
 }
 
 type Clients struct {
-	ReportClient *report.Client
+	ReportClient   *report.Client
+	ScheduleClient *schedule.Client
 }
 
 func New(log *slog.Logger, grpcOpts GrpcOpts, psqlOpts PsqlOpts, rOpts RedisOpts, clients Clients, updInterval time.Duration) *App {
@@ -50,7 +52,7 @@ func New(log *slog.Logger, grpcOpts GrpcOpts, psqlOpts PsqlOpts, rOpts RedisOpts
 
 	rDB := redis.New(rOpts.Host, rOpts.Password, rOpts.Port)
 
-	kgApp := key.New(log, updInterval, *clients.ReportClient)
+	kgApp := key.New(log, updInterval, clients.ReportClient, clients.ScheduleClient)
 
 	authService := auth.New(
 		log,

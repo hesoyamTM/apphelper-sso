@@ -14,7 +14,7 @@ require (
 	github.com/go-playground/validator/v10 v10.24.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hesoyamTM/apphelper-protos v0.0.10 // indirect
+	github.com/hesoyamTM/apphelper-protos v0.0.13 // indirect
 	github.com/ilyakaznacheev/cleanenv v1.5.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hesoyamTM/apphelper-sso/internal/clients/report"
+	"github.com/hesoyamTM/apphelper-sso/internal/clients/schedule"
 	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 )
 
@@ -21,10 +22,11 @@ type App struct {
 
 	privateKeyChan chan *ecdsa.PrivateKey
 
-	reportClient report.Client
+	reportClient   *report.Client
+	scheduleClient *schedule.Client
 }
 
-func New(log *slog.Logger, updInterval time.Duration, repCLient report.Client) *App {
+func New(log *slog.Logger, updInterval time.Duration, repCLient *report.Client, schedClient *schedule.Client) *App {
 	privKeyChan := make(chan *ecdsa.PrivateKey, 1)
 
 	return &App{
@@ -33,6 +35,7 @@ func New(log *slog.Logger, updInterval time.Duration, repCLient report.Client) *
 		updateInterval: updInterval,
 		privateKeyChan: privKeyChan,
 		reportClient:   repCLient,
+		scheduleClient: schedClient,
 	}
 }
 
@@ -48,7 +51,12 @@ func (k *App) Run() {
 		k.privateKey = privkey
 		k.publicKey = pubKey
 
-		err = k.reportClient.SetPublicKey(context.Background(), encode(pubKey))
+		encodedKey := encode(pubKey)
+		err = k.reportClient.SetPublicKey(context.Background(), encodedKey)
+		if err != nil {
+			k.log.Error(err.Error())
+		}
+		err = k.scheduleClient.SetPublicKey(context.Background(), encodedKey)
 		if err != nil {
 			k.log.Error(err.Error())
 		}

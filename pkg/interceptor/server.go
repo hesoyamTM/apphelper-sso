@@ -3,6 +3,7 @@ package interceptor
 import (
 	"context"
 	"crypto/ecdsa"
+	"errors"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -70,6 +71,11 @@ func (i *ServerInterceptor) authorize(ctx context.Context, method string) (conte
 	accessToken := strings.Split(bearerToken[0], " ")[1]
 	uid, err := jwt.Verify(accessToken, i.publicKey)
 	if err != nil {
+		if errors.Is(err, jwt.ErrUnauthorized) {
+			i.log.Error("token time has expired")
+			return nil, status.Errorf(codes.Unauthenticated, "token time has expired")
+		}
+
 		i.log.Error("access token is invalid", slog.String("Error", err.Error()))
 		return nil, status.Error(codes.Unauthenticated, "access token is invalid")
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/hesoyamTM/apphelper-sso/internal/app"
 	"github.com/hesoyamTM/apphelper-sso/internal/clients/report"
+	"github.com/hesoyamTM/apphelper-sso/internal/clients/schedule"
 	"github.com/hesoyamTM/apphelper-sso/internal/config"
 )
 
@@ -45,9 +46,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	scheduleClient, err := schedule.New(log, cfg.Schedule.Addr)
+	if err != nil {
+		panic(err)
+	}
 
 	cOpts := app.Clients{
-		ReportClient: repClient,
+		ReportClient:   repClient,
+		ScheduleClient: scheduleClient,
 	}
 
 	application := app.New(log, gOpts, pOpts, rOpts, cOpts, cfg.KeysUpdateInterval)
