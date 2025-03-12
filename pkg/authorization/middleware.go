@@ -31,6 +31,7 @@ func NewAuthMiddleware(authMethods map[string]bool, publicKey *ecdsa.PublicKey) 
 			if len(cookieToken) == 0 {
 				l.Error(r.Context(), "cookies is empty")
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
 			}
 
 			bearerToken := cookieToken[0].Value
@@ -38,6 +39,7 @@ func NewAuthMiddleware(authMethods map[string]bool, publicKey *ecdsa.PublicKey) 
 			if err != nil {
 				l.Error(r.Context(), err.Error())
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
 			}
 
 			r = r.WithContext(context.WithValue(r.Context(), Uid, uid))
