@@ -25,7 +25,7 @@ type Config struct {
 }
 
 func New(ctx context.Context, authServ auth.Auth, config Config) *App {
-	gRPCServer := grpc.NewServer()
+	gRPCServer := grpc.NewServer(grpc.UnaryInterceptor(logger.LoggingInterceptor(ctx)))
 
 	auth.RegisterServer(gRPCServer, authServ)
 

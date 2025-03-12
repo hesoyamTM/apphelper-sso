@@ -21,7 +21,7 @@ func NewAuthMiddleware(authMethods map[string]bool, publicKey *ecdsa.PublicKey) 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			l := logger.GetLoggerFromCtx(r.Context())
 
-			if !authMethods[r.Method] {
+			if !authMethods[r.RequestURI] {
 				next.ServeHTTP(w, r)
 				return
 			}
