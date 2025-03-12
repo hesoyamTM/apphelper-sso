@@ -23,6 +23,7 @@ func NewAuthMiddleware(authMethods map[string]bool, publicKey *ecdsa.PublicKey) 
 
 			if !authMethods[r.Method] {
 				next.ServeHTTP(w, r)
+				return
 			}
 
 			cookieToken := r.CookiesNamed("authorization")
