@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"net/http"
-	"strings"
 
 	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 	"github.com/hesoyamTM/apphelper-sso/pkg/logger"
@@ -22,7 +21,7 @@ func NewAuthMiddleware(authMethods map[string]bool, publicKey *ecdsa.PublicKey) 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			l := logger.GetLoggerFromCtx(r.Context())
 
-			if !authMethods[strings.Split(r.RequestURI, "?")[0]] {
+			if !authMethods[r.URL.Path] {
 				next.ServeHTTP(w, r)
 				return
 			}
