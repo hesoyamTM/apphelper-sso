@@ -5,4 +5,10 @@ tasks:
     aliases:
       - run
     cmds:
-      - go run ./cmd/main.go --config="./config/local.yaml"
+      - go run ./cmd/app/main.go --config="./config/local.yaml"
+  
+  keygenerate:
+    aliases:
+      - keygen
+    cmds:
+      - go run ./cmd/key/main.go

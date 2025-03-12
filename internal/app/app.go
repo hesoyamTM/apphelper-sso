@@ -1,11 +1,10 @@
 package app
 
 import (
-	"log/slog"
+	"context"
 	"time"
 
 	grpcapp "github.com/hesoyamTM/apphelper-sso/internal/app/grpc"
-	"github.com/hesoyamTM/apphelper-sso/internal/app/key"
 	"github.com/hesoyamTM/apphelper-sso/internal/clients/report"
 	"github.com/hesoyamTM/apphelper-sso/internal/clients/schedule"
 	"github.com/hesoyamTM/apphelper-sso/internal/services/auth"
@@ -14,7 +13,6 @@ import (
 )
 
 type App struct {
-	KGApp   *key.App
 	GRPCApp *grpcapp.App
 }
 
@@ -44,7 +42,7 @@ type Clients struct {
 	ScheduleClient *schedule.Client
 }
 
-func New(log *slog.Logger, grpcOpts GrpcOpts, psqlOpts PsqlOpts, rOpts RedisOpts, clients Clients, updInterval time.Duration) *App {
+func New(ctx context.Context, grpcOpts GrpcOpts, psqlOpts PsqlOpts, rOpts RedisOpts) *App {
 	psqlDB, err := psql.New(psqlOpts.User, psqlOpts.Password, psqlOpts.Host, psqlOpts.DB, psqlOpts.Port)
 	if err != nil {
 		panic(err)
@@ -52,21 +50,22 @@ func New(log *slog.Logger, grpcOpts GrpcOpts, psqlOpts PsqlOpts, rOpts RedisOpts
 
 	rDB := redis.New(rOpts.Host, rOpts.Password, rOpts.Port)
 
-	kgApp := key.New(log, updInterval, clients.ReportClient, clients.ScheduleClient)
-
 	authService := auth.New(
-		log,
+		ctx,
 		psqlDB,
 		rDB,
 		grpcOpts.AccessTokenTTL,
 		grpcOpts.RefreshTokenTTL,
-		kgApp.GetPrivateKeyChan(),
 	)
 
-	grpcApp := grpcapp.New(log, authService, grpcOpts.Host, grpcOpts.Port)
+	grpcCfg := grpcapp.Config{
+		Host: grpcOpts.Host,
+		Port: grpcOpts.Port,
+	}
+
+	grpcApp := grpcapp.New(ctx, authService, grpcCfg)
 
 	return &App{
-		KGApp:   kgApp,
 		GRPCApp: grpcApp,
 	}
 }

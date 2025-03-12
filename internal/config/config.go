@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Env                string        `yaml:"env" env-required:"true"`
-	KeysUpdateInterval time.Duration `yaml:"keys_update_interval" env-required:"true"`
+	Env        string `yaml:"env" env-required:"true"`
+	PrivateKey string `yaml:"public_key" env-required:"true" env:"PRIVATE_KEY"`
 
 	Grpc  GRPC  `yaml:"grpc"`
 	Psql  PSQL  `yaml:"psql"`
@@ -51,6 +52,11 @@ type ScheduleClient struct {
 }
 
 func MustLoad() *Config {
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
+
 	cfgPath := fetchConfigPath()
 
 	if cfgPath == "" {
@@ -80,7 +86,6 @@ func MustLoadByPath(cfgPath string) *Config {
 func fetchConfigPath() string {
 	var res string
 
-	// --config="./config/local.yaml"
 	flag.StringVar(&res, "config", "", "path to config file")
 	flag.Parse()
 

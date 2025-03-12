@@ -103,7 +103,7 @@ func (s *serverAPI) GetUsers(ctx context.Context, req *ssov1.GetUsersRequest) (*
 	ids := req.GetUserIds()
 
 	if err := validateGetUsers(ids); err != nil {
-		return nil, status.Error(codes.Internal, "validation error")
+		return nil, status.Error(codes.InvalidArgument, "validation error")
 	}
 
 	users, err := s.authService.GetUsers(ctx, ids)
@@ -134,7 +134,7 @@ func (s *serverAPI) RefreshToken(ctx context.Context, req *ssov1.RefreshTokenReq
 	token := req.GetRefreshToken()
 
 	if err := validateRefreshToken(ctx, token); err != nil {
-		return nil, status.Error(codes.Internal, "validation error")
+		return nil, status.Error(codes.InvalidArgument, "validation error")
 	}
 
 	tokens, err := s.authService.RefreshToken(ctx, token)

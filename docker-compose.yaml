@@ -1,22 +1,52 @@
 version: '3.9'
 
 services:
-  postgres:
+  # server:
+  #   build:
+  #     context: .
+  #     target: final
+  #   container_name: sso
+  #   ports:
+  #     - 6003:6003
+  #   volumes:
+  #     - ./config:/config
+  #   environment:
+  #     - CONFIG_PATH=/config/local.yaml
+
+  #   depends_on:
+  #     postgres_sso:
+  #       condition: service_healthy
+  #     redis_sso:
+  #       condition: service_healthy
+  
+  postgres_sso:
     image: postgres:latest
-    container_name: postgres
+    container_name: postgres_sso
     environment:
       POSTGRES_USER: "root"
       POSTGRES_PASSWORD: "1234"
       POSTGRES_DB: "auth"
     ports:
       - 5432:5432
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    volumes:
+    - ./migrations:/docker-entrypoint-initdb.d
     
-  redis:
+  redis_sso:
     image: redis:latest
-    container_name: redis
+    container_name: redis_sso
     restart: always
     environment:
       REDIS_PASSWORD: "1234"
       REDIS_PORT: 6379
     ports:
       - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5

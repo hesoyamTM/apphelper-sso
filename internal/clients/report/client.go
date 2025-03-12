@@ -3,23 +3,24 @@ package report
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	reportv1 "github.com/hesoyamTM/apphelper-protos/gen/go/report"
+	"github.com/hesoyamTM/apphelper-sso/internal/clients"
+	"github.com/hesoyamTM/apphelper-sso/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Client struct {
 	api reportv1.ReportClient
-	log *slog.Logger
+	log logger.Logger
 }
 
-func New(log *slog.Logger, addr string) (*Client, error) {
+func New(ctx context.Context, addr string) (*Client, error) {
 	const op = "report.New"
 
 	cc, err := grpc.NewClient(addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultServiceConfig(clients.RetryPolicy), grpc.WithMaxCallAttempts(10),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -27,19 +28,6 @@ func New(log *slog.Logger, addr string) (*Client, error) {
 
 	return &Client{
 		api: reportv1.NewReportClient(cc),
-		log: log,
+		log: *logger.GetLoggerFromCtx(ctx),
 	}, nil
-}
-
-func (c *Client) SetPublicKey(ctx context.Context, key string) error {
-	const op = "report.SetPublicKey"
-
-	_, err := c.api.SetPublicKey(ctx, &reportv1.SetPublicKeyRequest{
-		Key: key,
-	})
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	return nil
 }

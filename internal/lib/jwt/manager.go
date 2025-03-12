@@ -3,6 +3,7 @@ package jwt
 import (
 	"crypto/ecdsa"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/hesoyamTM/apphelper-sso/internal/models"
@@ -35,7 +36,9 @@ func NewTokens(user models.UserInfo, duration time.Duration, prKey *ecdsa.Privat
 	}, nil
 }
 
-func Verify(token string, publicKey *ecdsa.PublicKey) (int64, error) {
+func VerifyBearerToken(bearerToken string, publicKey *ecdsa.PublicKey) (int64, error) {
+	token := strings.Split(bearerToken, " ")[1]
+
 	parsed, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
 		return publicKey, nil
 	})

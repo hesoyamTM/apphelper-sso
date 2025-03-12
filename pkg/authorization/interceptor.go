@@ -1,4 +1,4 @@
-package interceptor
+package authorization
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log/slog"
 	"strconv"
-	"strings"
 
 	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 
@@ -68,8 +67,7 @@ func (i *ServerInterceptor) authorize(ctx context.Context, method string) (conte
 		return nil, status.Error(codes.Unauthenticated, "authorization token is not provided")
 	}
 
-	accessToken := strings.Split(bearerToken[0], " ")[1]
-	uid, err := jwt.Verify(accessToken, i.publicKey)
+	uid, err := jwt.VerifyBearerToken(bearerToken[0], i.publicKey)
 	if err != nil {
 		if errors.Is(err, jwt.ErrUnauthorized) {
 			i.log.Error("token time has expired")

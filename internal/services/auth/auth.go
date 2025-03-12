@@ -5,13 +5,14 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 	"github.com/hesoyamTM/apphelper-sso/internal/models"
 	"github.com/hesoyamTM/apphelper-sso/internal/services"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage"
+	"github.com/hesoyamTM/apphelper-sso/pkg/logger"
+	"go.uber.org/zap"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -31,7 +32,7 @@ type SessionsStorage interface {
 }
 
 type Auth struct {
-	log *slog.Logger
+	log *logger.Logger
 
 	userStorage     UserStorage
 	sessionsStorage SessionsStorage
@@ -42,14 +43,13 @@ type Auth struct {
 	privateKey *ecdsa.PrivateKey
 }
 
-func New(log *slog.Logger,
+func New(ctx context.Context,
 	uStorage UserStorage,
 	sStorage SessionsStorage,
 	accessTokenTTL time.Duration,
-	refreshTokenTTL time.Duration,
-	prKeyCh <-chan *ecdsa.PrivateKey) *Auth {
+	refreshTokenTTL time.Duration) *Auth {
 	authService := &Auth{
-		log:             log,
+		log:             logger.GetLoggerFromCtx(ctx),
 		userStorage:     uStorage,
 		sessionsStorage: sStorage,
 
@@ -57,24 +57,16 @@ func New(log *slog.Logger,
 		refreshTokenTTL: refreshTokenTTL,
 	}
 
-	go func() {
-		for prKey := range prKeyCh {
-			authService.privateKey = prKey
-		}
-	}()
-
 	return authService
 }
 
 func (a *Auth) Register(ctx context.Context, name, surname, login, password string) (models.JWTokens, error) {
 	const op = "auth.Register"
-	log := a.log.With(slog.String("op", op)).With(slog.String("login", login))
-
-	log.Info("registering user")
+	log := logger.GetLoggerFromCtx(ctx) //a.log.With(slog.String("op", op)).With(slog.String("login", login))
 
 	passHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Error("failed to generate hash from password", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to generate hash from password", zap.Error(err))
 
 		return models.JWTokens{}, fmt.Errorf("failed to generate hash: %w", err)
 	}
@@ -82,11 +74,11 @@ func (a *Auth) Register(ctx context.Context, name, surname, login, password stri
 	userId, err := a.userStorage.CrateUser(ctx, name, surname, login, passHash)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
-			log.Error("user already exists")
+			log.Error(ctx, "user already exists", zap.Error(err))
 			return models.JWTokens{}, fmt.Errorf("%s: %w", op, services.ErrUserAlreadyExists)
 		}
 
-		log.Error("failed to create user", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to create user", zap.Error(err))
 		return models.JWTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -98,7 +90,7 @@ func (a *Auth) Register(ctx context.Context, name, surname, login, password stri
 
 	tokens, err := jwt.NewTokens(user, a.accessTokenTTL, a.privateKey)
 	if err != nil {
-		log.Error("failed to generate tokens", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to generate tokens", zap.Error(err))
 
 		return models.JWTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -112,12 +104,12 @@ func (a *Auth) Register(ctx context.Context, name, surname, login, password stri
 
 func (a *Auth) Login(ctx context.Context, login, password string) (models.JWTokens, error) {
 	const op = "auth.Login"
-	log := a.log.With(slog.String("login", login), slog.String("op", op))
-	log.Info("registering user")
+	log := logger.GetLoggerFromCtx(ctx) //a.log.With(slog.String("login", login), slog.String("op", op))
+	log.Info(ctx, "authorize user")
 
 	user, err := a.userStorage.ProvideUserByLogin(ctx, login)
 	if err != nil {
-		log.Error("failed to provide user", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to provide user", zap.Error(err))
 
 		if errors.Is(err, storage.ErrUserNotFound) {
 			return models.JWTokens{}, fmt.Errorf("%s: %w", op, services.ErrUserNotFound)
@@ -127,20 +119,20 @@ func (a *Auth) Login(ctx context.Context, login, password string) (models.JWToke
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(password)); err != nil {
-		log.Error("incorrect password", slog.String("Error", err.Error()))
+		log.Error(ctx, "incorrect password", zap.Error(err))
 
 		return models.JWTokens{}, fmt.Errorf("%s: %w", op, services.ErrInvalidCredentials)
 	}
 
 	tokens, err := jwt.NewTokens(user.UserInfo, a.accessTokenTTL, a.privateKey)
 	if err != nil {
-		log.Error("failed to generate tokens", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to generate tokens", zap.Error(err))
 
 		return models.JWTokens{}, fmt.Errorf("failed to generate tokens: %w", err)
 	}
 
 	if err = a.sessionsStorage.CreateSession(ctx, user.UserAuth.Id, tokens.RefreshToken, a.refreshTokenTTL); err != nil {
-		log.Error("failed to create session", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to create session", zap.Error(err))
 
 		return models.JWTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -150,11 +142,11 @@ func (a *Auth) Login(ctx context.Context, login, password string) (models.JWToke
 
 func (a *Auth) RefreshToken(ctx context.Context, refreshToken string) (models.JWTokens, error) {
 	const op = "auth.RefreshToken"
-	log := a.log.With(slog.String("op", op))
+	log := logger.GetLoggerFromCtx(ctx) //a.log.With(slog.String("op", op))
 
 	userId, err := a.sessionsStorage.ProvideUser(ctx, refreshToken)
 	if err != nil {
-		log.Error("failed to provide user", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to provide user", zap.Error(err))
 
 		if errors.Is(err, storage.ErrSessionNotFound) {
 			return models.JWTokens{}, fmt.Errorf("%s: %w", op, services.ErrNotAuthorized)
@@ -165,7 +157,7 @@ func (a *Auth) RefreshToken(ctx context.Context, refreshToken string) (models.JW
 
 	user, err := a.userStorage.ProvideUserById(ctx, userId)
 	if err != nil {
-		log.Error("failed to provide user", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to provide user", zap.Error(err))
 
 		if errors.Is(err, storage.ErrUserNotFound) {
 			return models.JWTokens{}, fmt.Errorf("%s: %w", op, services.ErrUserNotFound)
@@ -176,13 +168,13 @@ func (a *Auth) RefreshToken(ctx context.Context, refreshToken string) (models.JW
 
 	newTokens, err := jwt.NewTokens(user.UserInfo, a.accessTokenTTL, a.privateKey)
 	if err != nil {
-		log.Error("failed to generate tokens", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to generate tokens", zap.Error(err))
 
 		return models.JWTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	if err = a.sessionsStorage.UpdateSession(ctx, refreshToken, newTokens.RefreshToken, a.refreshTokenTTL); err != nil {
-		log.Error("failed to update session", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to update session", zap.Error(err))
 
 		if errors.Is(err, storage.ErrSessionNotFound) {
 			return models.JWTokens{}, fmt.Errorf("%s: %w", op, services.ErrNotAuthorized)
@@ -195,12 +187,12 @@ func (a *Auth) RefreshToken(ctx context.Context, refreshToken string) (models.JW
 
 func (a *Auth) GetUser(ctx context.Context, id int64) (models.User, error) {
 	const op = "auth.GetUser"
-	log := a.log.With(slog.String("op", op))
+	log := logger.GetLoggerFromCtx(ctx) //a.log.With(slog.String("op", op))
 	_ = log
 
 	user, err := a.userStorage.ProvideUserById(ctx, id)
 	if err != nil {
-		log.Error("failed to provide user", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to provide user", zap.Error(err))
 
 		if errors.Is(err, storage.ErrUserNotFound) {
 			return models.User{}, fmt.Errorf("%s: %w", op, services.ErrUserNotFound)
@@ -213,12 +205,11 @@ func (a *Auth) GetUser(ctx context.Context, id int64) (models.User, error) {
 
 func (a *Auth) GetUsers(ctx context.Context, ids []int64) ([]models.User, error) {
 	const op = "auth.GetUsers"
-	log := a.log.With(slog.String("op", op))
-	_ = log
+	log := logger.GetLoggerFromCtx(ctx) //a.log.With(slog.String("op", op))
 
 	users, err := a.userStorage.ProvideUsersById(ctx, ids)
 	if err != nil {
-		log.Error("failed to provide user", slog.String("Error", err.Error()))
+		log.Error(ctx, "failed to provide user", zap.Error(err))
 
 		if errors.Is(err, storage.ErrUserNotFound) {
 			return nil, fmt.Errorf("%s: %w", op, services.ErrUserNotFound)

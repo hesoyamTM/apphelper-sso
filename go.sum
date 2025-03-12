@@ -35,6 +35,16 @@ github.com/hesoyamTM/apphelper-protos v0.0.10 h1:Rz78iOx93F87DnYYpl1ARc/UHPCFCXB
 github.com/hesoyamTM/apphelper-protos v0.0.10/go.mod h1:zJuwR0gN71x/Nr6oPH3wYeh8BqWlMXpGz49xXa8y6v8=
 github.com/hesoyamTM/apphelper-protos v0.0.13 h1:ej7+Cv9IZ5g9QlA2495Fvezac6ccA75PNF1FP95Jr84=
 github.com/hesoyamTM/apphelper-protos v0.0.13/go.mod h1:zJuwR0gN71x/Nr6oPH3wYeh8BqWlMXpGz49xXa8y6v8=
+github.com/hesoyamTM/apphelper-protos v0.0.14 h1:luCd9GyN4xjIDuphX3tlda0nMyOt6FFZgN9s8EwVt4g=
+github.com/hesoyamTM/apphelper-protos v0.0.14/go.mod h1:zJuwR0gN71x/Nr6oPH3wYeh8BqWlMXpGz49xXa8y6v8=
+github.com/hesoyamTM/apphelper-protos v0.0.15 h1:WU0vnxSn7CnTOtdgkbMHB12VKgVxd+8oI2zVepq44P8=
+github.com/hesoyamTM/apphelper-protos v0.0.15/go.mod h1:zJuwR0gN71x/Nr6oPH3wYeh8BqWlMXpGz49xXa8y6v8=
+github.com/hesoyamTM/apphelper-protos v0.0.16 h1:pA9AKniKR89FwaRVzvFcAfdhwTez9bvHWD4fKMe8UeM=
+github.com/hesoyamTM/apphelper-protos v0.0.16/go.mod h1:zJuwR0gN71x/Nr6oPH3wYeh8BqWlMXpGz49xXa8y6v8=
+github.com/hesoyamTM/apphelper-protos v0.0.17 h1:CFbMfKJKVvV3OWemrb81Kmd4t3ohGWopUwGC+NtiXGE=
+github.com/hesoyamTM/apphelper-protos v0.0.17/go.mod h1:zJuwR0gN71x/Nr6oPH3wYeh8BqWlMXpGz49xXa8y6v8=
+github.com/hesoyamTM/protos v0.1.1 h1:nBwgzMt9eCqhWkBv1qCPgohZqCcpQU5l+BcuLbfqkVs=
+github.com/hesoyamTM/protos v0.1.1/go.mod h1:KTK8Gk/+5cqGEIqWci0PQwAaQIPf6QNoV1ckwdXKzSg=
 github.com/ilyakaznacheev/cleanenv v1.5.0 h1:0VNZXggJE2OYdXE87bfSSwGxeiGt9moSR2lOrsHHvr4=
 github.com/ilyakaznacheev/cleanenv v1.5.0/go.mod h1:a5aDzaJrLCQZsazHol1w8InnDcOX0OColm64SlIi6gk=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
@@ -66,6 +76,10 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
+go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
+go.uber.org/multierr v1.11.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN80Y=
+go.uber.org/zap v1.27.0 h1:aJMhYGrd5QSmlpLMr2MftRKl7t8J8PTZPA732ud/XR8=
+go.uber.org/zap v1.27.0/go.mod h1:GB2qFLM7cTU87MWRP2mPIjqfIDnGu+VIO4V/SdhGo2E=
 golang.org/x/crypto v0.32.0 h1:euUpcYgM8WcP71gNpTqQCn6rC2t6ULUPiOzfWaXVVfc=
 golang.org/x/crypto v0.32.0/go.mod h1:ZnnJkOaASj8g0AjIduWNlq2NRxL0PlBrbKVyZ6V/Ugc=
 golang.org/x/net v0.34.0 h1:Mb7Mrk043xzHgnRM88suvJFwzVrRfHEHJEl5/71CKw0=
