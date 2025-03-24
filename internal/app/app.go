@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"time"
 
 	grpcapp "github.com/hesoyamTM/apphelper-sso/internal/app/grpc"
@@ -21,6 +22,7 @@ type GrpcOpts struct {
 	Port            int
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
+	PrivateKey      *ecdsa.PrivateKey
 }
 
 type PsqlOpts struct {
@@ -56,6 +58,7 @@ func New(ctx context.Context, grpcOpts GrpcOpts, psqlOpts PsqlOpts, rOpts RedisO
 		rDB,
 		grpcOpts.AccessTokenTTL,
 		grpcOpts.RefreshTokenTTL,
+		grpcOpts.PrivateKey,
 	)
 
 	grpcCfg := grpcapp.Config{

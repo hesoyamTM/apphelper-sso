@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"flag"
+	"log"
 	"os"
 	"time"
 
@@ -11,87 +12,91 @@ import (
 )
 
 type Config struct {
-	Env        string `yaml:"env" env-required:"true"`
+	Env        string `yaml:"env" env-required:"true" env:"ENV"`
 	PrivateKey string `yaml:"public_key" env-required:"true" env:"PRIVATE_KEY"`
+
+	AccessTokenTTL  time.Duration `yaml:"access_token_ttl" env-required:"true" env:"ACCESS_TOKEN_TTL"`
+	RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl" env-required:"true" env:"REFRESH_TOKEN_TTL"`
 
 	Grpc  GRPC  `yaml:"grpc"`
 	Psql  PSQL  `yaml:"psql"`
 	Redis Redis `yaml:"redis"`
-
-	Report   ReportClient   `yaml:"report_client"`
-	Schedule ScheduleClient `yaml:"schedule_client"`
 }
 
 type GRPC struct {
-	Host            string        `yaml:"host" env-required:"true"`
-	Port            int           `yaml:"port" env-required:"true"`
-	AccessTokenTTL  time.Duration `yaml:"access_token_ttl" env-required:"true"`
-	RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl" env-required:"true"`
+	Host string `yaml:"host" env-required:"true" env:"GRPC_HOST"`
+	Port int    `yaml:"port" env-required:"true" env:"GRPC_PORT"`
 }
 
 type PSQL struct {
-	Host     string `yaml:"host" env-required:"true"`
-	Port     int    `yaml:"port" env-required:"true"`
-	User     string `yaml:"user" env-required:"true"`
-	Password string `yaml:"password" env-required:"true"`
-	DB       string `yaml:"db" env-required:"true"`
+	Host     string `yaml:"host" env-required:"true" env:"PSQL_HOST"`
+	Port     int    `yaml:"port" env-required:"true" env:"PSQL_PORT"`
+	User     string `yaml:"user" env-required:"true" env:"PSQL_USER"`
+	Password string `yaml:"password" env-required:"true" env:"PSQL_PASSWORD"`
+	DB       string `yaml:"db" env-required:"true" env:"PSQL_DATABASE"`
 }
 
 type Redis struct {
-	Host     string `yaml:"host" env-required:"true"`
-	Port     int    `yaml:"port" env-required:"true"`
-	Password string `yaml:"password" env-required:"true"`
+	Host     string `yaml:"host" env-required:"true" env:"REDIS_HOST"`
+	Port     int    `yaml:"port" env-required:"true" env:"REDIS_PORT"`
+	Password string `yaml:"password" env-required:"true" env:"REDIS_PASSWORD"`
 }
 
-type ReportClient struct {
-	Addr string `yaml:"addr" env-required:"true"`
-}
+func fetchConfigPath() string {
+	var cfgPath string
 
-type ScheduleClient struct {
-	Addr string `yaml:"addr" env-required:"true"`
+	flag.StringVar(&cfgPath, "config", "", "config path")
+	flag.Parse()
+
+	if cfgPath == "" {
+		cfgPath = os.Getenv("CONFIG_PATH")
+	}
+
+	return cfgPath
 }
 
 func MustLoad() *Config {
 	err := godotenv.Load()
 	if err != nil {
-		panic(err)
+		log.Println("failed to load .env")
 	}
 
 	cfgPath := fetchConfigPath()
-
-	if cfgPath == "" {
-		panic("config path is empty")
+	if cfgPath != "" {
+		return MustLoadByPath(cfgPath)
 	}
 
-	return MustLoadByPath(cfgPath)
+	return MustLoadEnv()
 }
 
-func MustLoadByPath(cfgPath string) *Config {
+func MustLoadEnv() *Config {
 	var cfg Config
 
-	if _, err := os.Stat(cfgPath); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			panic("file does not exist: " + cfgPath)
-		}
+	if err := cleanenv.ReadEnv(&cfg); err != nil {
 		panic(err)
-	}
-
-	if err := cleanenv.ReadConfig(cfgPath, &cfg); err != nil {
-		panic("failed to read config: " + err.Error())
 	}
 
 	return &cfg
 }
 
-func fetchConfigPath() string {
-	var res string
-
-	flag.StringVar(&res, "config", "", "path to config file")
-	flag.Parse()
-
-	if res == "" {
-		res = os.Getenv("CONFIG_PATH")
+func MustLoadByPath(cfgPath string) *Config {
+	if cfgPath == "" {
+		panic("config path is empty")
 	}
 
-	return res
+	if _, err := os.Stat(cfgPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			panic("config file does not exist: " + err.Error())
+		}
+
+		panic(err)
+	}
+
+	var cfg Config
+
+	if err := cleanenv.ReadConfig(cfgPath, &cfg); err != nil {
+		panic(err)
+	}
+
+	return &cfg
 }

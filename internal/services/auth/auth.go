@@ -47,7 +47,8 @@ func New(ctx context.Context,
 	uStorage UserStorage,
 	sStorage SessionsStorage,
 	accessTokenTTL time.Duration,
-	refreshTokenTTL time.Duration) *Auth {
+	refreshTokenTTL time.Duration,
+	privateKey *ecdsa.PrivateKey) *Auth {
 	authService := &Auth{
 		log:             logger.GetLoggerFromCtx(ctx),
 		userStorage:     uStorage,
@@ -55,6 +56,7 @@ func New(ctx context.Context,
 
 		accessTokenTTL:  accessTokenTTL,
 		refreshTokenTTL: refreshTokenTTL,
+		privateKey:      privateKey,
 	}
 
 	return authService

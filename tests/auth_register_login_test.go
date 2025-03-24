@@ -41,7 +41,7 @@ func TestRegisterLoginHappyPath(t *testing.T) {
 	loginTime := time.Now()
 	require.NoError(t, err)
 
-	checkJWT(t, respReg.GetAccessToken(), name, surname, loginTime.Add(st.Cfg.Grpc.AccessTokenTTL))
+	checkJWT(t, respReg.GetAccessToken(), name, surname, loginTime.Add(st.Cfg.AccessTokenTTL))
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, respReg.GetAccessToken())
@@ -56,7 +56,7 @@ func TestRegisterLoginHappyPath(t *testing.T) {
 
 	require.NoError(t, err)
 
-	checkJWT(t, respLog.GetAccessToken(), name, surname, loginTime.Add(st.Cfg.Grpc.AccessTokenTTL))
+	checkJWT(t, respLog.GetAccessToken(), name, surname, loginTime.Add(st.Cfg.AccessTokenTTL))
 }
 
 func TestRegisterLogin_DuplicatedRegistration(t *testing.T) {

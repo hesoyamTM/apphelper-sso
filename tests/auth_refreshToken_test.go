@@ -40,7 +40,7 @@ func TestRefreshToken_HappyPath(t *testing.T) {
 	require.NotEmpty(t, respRefToken.GetAccessToken())
 	require.NotEmpty(t, respRefToken.GetRefreshToken())
 
-	checkJWT(t, respRefToken.GetAccessToken(), name, surname, refreshTime.Add(st.Cfg.Grpc.AccessTokenTTL))
+	checkJWT(t, respRefToken.GetAccessToken(), name, surname, refreshTime.Add(st.Cfg.AccessTokenTTL))
 }
 
 func TestRefreshToken_TokenExpired(t *testing.T) {

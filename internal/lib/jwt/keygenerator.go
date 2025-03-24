@@ -42,3 +42,14 @@ func Decode(pemEncoded string, pemEncodedPub string) (*ecdsa.PrivateKey, *ecdsa.
 
 	return privateKey, publicKey
 }
+
+func DecodePrivateKey(pemEncoded string) (*ecdsa.PrivateKey, error) {
+	block, _ := pem.Decode([]byte(pemEncoded))
+	x509Encoded := block.Bytes
+	privateKey, err := x509.ParseECPrivateKey(x509Encoded)
+	if err != nil {
+		return nil, err
+	}
+
+	return privateKey, nil
+}

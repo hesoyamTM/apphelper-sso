@@ -8,6 +8,7 @@ import (
 
 	"github.com/hesoyamTM/apphelper-sso/internal/app"
 	"github.com/hesoyamTM/apphelper-sso/internal/config"
+	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 	"github.com/hesoyamTM/apphelper-sso/pkg/logger"
 )
 
@@ -22,12 +23,17 @@ func main() {
 	log := logger.GetLoggerFromCtx(ctx)
 
 	log.Debug(ctx, "logger working")
+	privKey, err := jwt.DecodePrivateKey(cfg.PrivateKey)
+	if err != nil {
+		panic(err)
+	}
 
 	gOpts := app.GrpcOpts{
 		Host:            cfg.Grpc.Host,
 		Port:            cfg.Grpc.Port,
-		AccessTokenTTL:  cfg.Grpc.AccessTokenTTL,
-		RefreshTokenTTL: cfg.Grpc.RefreshTokenTTL,
+		AccessTokenTTL:  cfg.AccessTokenTTL,
+		RefreshTokenTTL: cfg.RefreshTokenTTL,
+		PrivateKey:      privKey,
 	}
 	pOpts := app.PsqlOpts{
 		Host:     cfg.Psql.Host,
