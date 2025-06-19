@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/hesoyamTM/apphelper-sso/internal/storage/psql"
+	"github.com/hesoyamTM/apphelper-sso/internal/storage/redis"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/joho/godotenv"
 )
@@ -18,28 +20,14 @@ type Config struct {
 	AccessTokenTTL  time.Duration `yaml:"access_token_ttl" env-required:"true" env:"ACCESS_TOKEN_TTL"`
 	RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl" env-required:"true" env:"REFRESH_TOKEN_TTL"`
 
-	Grpc  GRPC  `yaml:"grpc"`
-	Psql  PSQL  `yaml:"psql"`
-	Redis Redis `yaml:"redis"`
+	Grpc  GRPC              `yaml:"grpc"`
+	Psql  psql.PsqlConfig   `yaml:"psql"`
+	Redis redis.RedisConfig `yaml:"redis"`
 }
 
 type GRPC struct {
 	Host string `yaml:"host" env-required:"true" env:"GRPC_HOST"`
 	Port int    `yaml:"port" env-required:"true" env:"GRPC_PORT"`
-}
-
-type PSQL struct {
-	Host     string `yaml:"host" env-required:"true" env:"PSQL_HOST"`
-	Port     int    `yaml:"port" env-required:"true" env:"PSQL_PORT"`
-	User     string `yaml:"user" env-required:"true" env:"PSQL_USER"`
-	Password string `yaml:"password" env-required:"true" env:"PSQL_PASSWORD"`
-	DB       string `yaml:"db" env-required:"true" env:"PSQL_DATABASE"`
-}
-
-type Redis struct {
-	Host     string `yaml:"host" env-required:"true" env:"REDIS_HOST"`
-	Port     int    `yaml:"port" env-required:"true" env:"REDIS_PORT"`
-	Password string `yaml:"password" env-required:"true" env:"REDIS_PASSWORD"`
 }
 
 func fetchConfigPath() string {

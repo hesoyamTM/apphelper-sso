@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/hesoyamTM/apphelper-sso/internal/models"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage"
 
@@ -18,11 +19,18 @@ type Storage struct {
 	pool *pgxpool.Pool
 }
 
-func New(user, pass, host, db string, port int) (*Storage, error) {
+type PsqlConfig struct {
+	Host     string `yaml:"host" env-required:"true" env:"PSQL_HOST"`
+	Port     int    `yaml:"port" env-required:"true" env:"PSQL_PORT"`
+	User     string `yaml:"user" env-required:"true" env:"PSQL_USER"`
+	Password string `yaml:"password" env-required:"true" env:"PSQL_PASSWORD"`
+	DB       string `yaml:"db" env-required:"true" env:"PSQL_DATABASE"`
+}
+
+func New(ctx context.Context, cfg PsqlConfig) (*Storage, error) {
 	const op = "psql.New"
 
-	ctx := context.Background()
-	connString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s", user, pass, host, port, db)
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DB)
 
 	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
@@ -34,33 +42,33 @@ func New(user, pass, host, db string, port int) (*Storage, error) {
 	}, nil
 }
 
-func (s *Storage) CrateUser(ctx context.Context, name, surname, login string, passHash []byte) (int64, error) {
+func (s *Storage) CrateUser(ctx context.Context, name, surname, login string, passHash []byte) (uuid.UUID, error) {
 	const op = "psql.CreateUser"
 
 	query := `INSERT INTO users (name, surname, login, pass_hash) VALUES ($1, $2, $3, $4) RETURNING id`
 
 	row := s.pool.QueryRow(ctx, query, name, surname, login, passHash)
 
-	var id int64
+	var id uuid.NullUUID
 	if err := row.Scan(&id); err != nil {
 		if err == pgx.ErrNoRows {
-			return 0, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+			return uuid.Nil, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 		}
 
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
-				return 0, fmt.Errorf("%s: %w", op, storage.ErrUserExists)
+				return uuid.Nil, fmt.Errorf("%s: %w", op, storage.ErrUserExists)
 			}
 		}
 
-		return 0, fmt.Errorf("%s: %w", op, err)
+		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return id, nil
+	return id.UUID, nil
 }
 
-func (s *Storage) ProvideUserById(ctx context.Context, id int64) (models.User, error) {
+func (s *Storage) ProvideUserById(ctx context.Context, id uuid.UUID) (models.User, error) {
 	const op = "psql.ProvideUserById"
 
 	query := `SELECT name, surname, login, pass_hash FROM users WHERE id = $1`
@@ -89,7 +97,7 @@ func (s *Storage) ProvideUserByLogin(ctx context.Context, login string) (models.
 	row := s.pool.QueryRow(ctx, query, login)
 
 	var user models.User
-	var id int64
+	var id uuid.NullUUID
 	err := row.Scan(&id, &user.Name, &user.Surname, &user.PassHash)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -99,13 +107,13 @@ func (s *Storage) ProvideUserByLogin(ctx context.Context, login string) (models.
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	user.UserInfo.Id = id
-	user.UserAuth.Id = id
+	user.UserInfo.Id = id.UUID
+	user.UserAuth.Id = id.UUID
 
 	return user, nil
 }
 
-func (s *Storage) ProvideUsersById(ctx context.Context, ids []int64) ([]models.User, error) {
+func (s *Storage) ProvideUsersById(ctx context.Context, ids []uuid.UUID) ([]models.User, error) {
 	const op = "psql.ProvideUsersById"
 
 	if len(ids) == 0 {
@@ -130,7 +138,7 @@ func (s *Storage) ProvideUsersById(ctx context.Context, ids []int64) ([]models.U
 
 	for rows.Next() {
 		var user models.User
-		var id int64
+		var id uuid.NullUUID
 
 		err := rows.Scan(&id, &user.Name, &user.Surname, &user.Login, &user.PassHash)
 		if err != nil {
@@ -141,11 +149,45 @@ func (s *Storage) ProvideUsersById(ctx context.Context, ids []int64) ([]models.U
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 
-		user.UserInfo.Id = id
-		user.UserAuth.Id = id
+		user.UserInfo.Id = id.UUID
+		user.UserAuth.Id = id.UUID
 
 		users = append(users, user)
 	}
 
 	return users, nil
+}
+
+func (s *Storage) UpdateUser(ctx context.Context, user models.User) error {
+	const op = "psql.UpdateUser"
+
+	query := `UPDATE users SET name = $1, surname = $2, login = $3, pass_hash = $4 WHERE id = $5`
+
+	_, err := s.pool.Exec(ctx, query, user.Name, user.Surname, user.Login, user.PassHash, user.UserAuth.Id)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
+
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (s *Storage) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	const op = "psql.DeleteUser"
+
+	query := `DELETE FROM users WHERE id = $1`
+
+	_, err := s.pool.Exec(ctx, query, id)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
+
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }

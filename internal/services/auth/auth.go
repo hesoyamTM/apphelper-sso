@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 	"github.com/hesoyamTM/apphelper-sso/internal/models"
 	"github.com/hesoyamTM/apphelper-sso/internal/services"
@@ -18,17 +19,19 @@ import (
 )
 
 type UserStorage interface {
-	CrateUser(ctx context.Context, name, surname, login string, passHash []byte) (int64, error)
-	ProvideUserById(ctx context.Context, id int64) (models.User, error)
+	CrateUser(ctx context.Context, name, surname, login string, passHash []byte) (uuid.UUID, error)
+	ProvideUserById(ctx context.Context, id uuid.UUID) (models.User, error)
 	ProvideUserByLogin(ctx context.Context, login string) (models.User, error)
-	ProvideUsersById(ctx context.Context, ids []int64) ([]models.User, error)
+	ProvideUsersById(ctx context.Context, ids []uuid.UUID) ([]models.User, error)
+	UpdateUser(ctx context.Context, user models.User) error
+	DeleteUser(ctx context.Context, id uuid.UUID) error
 }
 
 type SessionsStorage interface {
-	CreateSession(ctx context.Context, userId int64, refreshToken string, expiration time.Duration) error
+	CreateSession(ctx context.Context, userId uuid.UUID, refreshToken string, expiration time.Duration) error
 	UpdateSession(ctx context.Context, oldRefreshToken, newRefreshToken string, expiration time.Duration) error
 	// returns user id
-	ProvideUser(ctx context.Context, refreshToken string) (int64, error)
+	ProvideUser(ctx context.Context, refreshToken string) (uuid.UUID, error)
 }
 
 type Auth struct {
@@ -187,7 +190,7 @@ func (a *Auth) RefreshToken(ctx context.Context, refreshToken string) (models.JW
 	return newTokens, nil
 }
 
-func (a *Auth) GetUser(ctx context.Context, id int64) (models.User, error) {
+func (a *Auth) GetUser(ctx context.Context, id uuid.UUID) (models.User, error) {
 	const op = "auth.GetUser"
 	log := logger.GetLoggerFromCtx(ctx) //a.log.With(slog.String("op", op))
 	_ = log
@@ -205,7 +208,7 @@ func (a *Auth) GetUser(ctx context.Context, id int64) (models.User, error) {
 	return user, nil
 }
 
-func (a *Auth) GetUsers(ctx context.Context, ids []int64) ([]models.User, error) {
+func (a *Auth) GetUsers(ctx context.Context, ids []uuid.UUID) ([]models.User, error) {
 	const op = "auth.GetUsers"
 	log := logger.GetLoggerFromCtx(ctx) //a.log.With(slog.String("op", op))
 
@@ -220,4 +223,38 @@ func (a *Auth) GetUsers(ctx context.Context, ids []int64) ([]models.User, error)
 	}
 
 	return users, nil
+}
+
+func (a *Auth) UpdateUser(ctx context.Context, user models.User) error {
+	const op = "auth.UpdateUser"
+	log := logger.GetLoggerFromCtx(ctx)
+
+	if err := a.userStorage.UpdateUser(ctx, user); err != nil {
+		log.Error(ctx, "failed to update user", zap.Error(err))
+
+		if errors.Is(err, storage.ErrUserNotFound) {
+			return fmt.Errorf("%s: %w", op, services.ErrUserNotFound)
+		}
+
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (a *Auth) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	const op = "auth.DeleteUser"
+	log := logger.GetLoggerFromCtx(ctx)
+
+	if err := a.userStorage.DeleteUser(ctx, id); err != nil {
+		log.Error(ctx, "failed to delete user", zap.Error(err))
+
+		if errors.Is(err, storage.ErrUserNotFound) {
+			return fmt.Errorf("%s: %w", op, services.ErrUserNotFound)
+		}
+
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }

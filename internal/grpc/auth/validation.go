@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 func validateRegister(ctx context.Context, name, surname, login, pass string) error {
@@ -48,7 +49,7 @@ func validateRefreshToken(ctx context.Context, token string) error {
 	return nil
 }
 
-func validateGetUsers(ids []int64) error {
+func validateGetUsers(ids []uuid.UUID) error {
 	if ids == nil {
 		return errors.New("id array is empty")
 	}

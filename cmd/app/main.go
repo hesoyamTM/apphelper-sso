@@ -8,7 +8,6 @@ import (
 
 	"github.com/hesoyamTM/apphelper-sso/internal/app"
 	"github.com/hesoyamTM/apphelper-sso/internal/config"
-	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 	"github.com/hesoyamTM/apphelper-sso/pkg/logger"
 )
 
@@ -23,32 +22,8 @@ func main() {
 	log := logger.GetLoggerFromCtx(ctx)
 
 	log.Debug(ctx, "logger working")
-	privKey, err := jwt.DecodePrivateKey(cfg.PrivateKey)
-	if err != nil {
-		panic(err)
-	}
 
-	gOpts := app.GrpcOpts{
-		Host:            cfg.Grpc.Host,
-		Port:            cfg.Grpc.Port,
-		AccessTokenTTL:  cfg.AccessTokenTTL,
-		RefreshTokenTTL: cfg.RefreshTokenTTL,
-		PrivateKey:      privKey,
-	}
-	pOpts := app.PsqlOpts{
-		Host:     cfg.Psql.Host,
-		Port:     cfg.Psql.Port,
-		User:     cfg.Psql.User,
-		Password: cfg.Psql.Password,
-		DB:       cfg.Psql.DB,
-	}
-	rOpts := app.RedisOpts{
-		Host:     cfg.Redis.Host,
-		Port:     cfg.Redis.Port,
-		Password: cfg.Redis.Password,
-	}
-
-	application := app.New(ctx, gOpts, pOpts, rOpts)
+	application := app.New(ctx, cfg)
 	go application.GRPCApp.MustRun(ctx)
 
 	stop := make(chan os.Signal, 1)

@@ -1,5 +1,5 @@
-CREATE TABLE IF NOT EXISTS Users (
-    id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS users (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(20) NOT NULL,
     surname VARCHAR(20) NOT NULL,
     login VARCHAR(20) NOT NULL UNIQUE,

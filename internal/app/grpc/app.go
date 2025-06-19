@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/hesoyamTM/apphelper-sso/internal/config"
 	"github.com/hesoyamTM/apphelper-sso/internal/grpc/auth"
 	"github.com/hesoyamTM/apphelper-sso/pkg/logger"
 
@@ -16,15 +17,10 @@ const ()
 type App struct {
 	log        *logger.Logger
 	gRPCServer *grpc.Server
-	config     Config
+	config     config.GRPC
 }
 
-type Config struct {
-	Host string
-	Port int
-}
-
-func New(ctx context.Context, authServ auth.Auth, config Config) *App {
+func New(ctx context.Context, authServ auth.Auth, config config.GRPC) *App {
 	gRPCServer := grpc.NewServer(grpc.UnaryInterceptor(logger.LoggingInterceptor(ctx)))
 
 	auth.RegisterServer(gRPCServer, authServ)
@@ -48,7 +44,7 @@ func (a *App) run(ctx context.Context) error {
 		return fmt.Errorf("failed to run server: %w", err)
 	}
 
-	a.log.Info(ctx, "server is running")
+	a.log.Info(ctx, fmt.Sprintf("grpc server is running on %s:%d", a.config.Host, a.config.Port))
 
 	if err := a.gRPCServer.Serve(l); err != nil {
 		return fmt.Errorf("failed to run server: %w", err)

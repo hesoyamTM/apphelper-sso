@@ -3,9 +3,9 @@ package redis
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage"
 
 	"github.com/redis/go-redis/v9"
@@ -15,10 +15,16 @@ type Storage struct {
 	client *redis.Client
 }
 
-func New(host, pass string, port int) *Storage {
+type RedisConfig struct {
+	Host     string `yaml:"host" env-required:"true" env:"REDIS_HOST"`
+	Port     int    `yaml:"port" env-required:"true" env:"REDIS_PORT"`
+	Password string `yaml:"password" env-required:"true" env:"REDIS_PASSWORD"`
+}
+
+func New(ctx context.Context, cfg RedisConfig) *Storage {
 	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", host, port),
-		Password: pass,
+		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Password: cfg.Password,
 		DB:       0,
 	})
 
@@ -27,7 +33,7 @@ func New(host, pass string, port int) *Storage {
 	}
 }
 
-func (s *Storage) CreateSession(ctx context.Context, userId int64, refreshToken string, tokenTTL time.Duration) error {
+func (s *Storage) CreateSession(ctx context.Context, userId uuid.UUID, refreshToken string, tokenTTL time.Duration) error {
 	const op = "redis.CreateSession"
 
 	if err := s.client.Set(ctx, refreshToken, userId, tokenTTL).Err(); err != nil {
@@ -56,21 +62,21 @@ func (s *Storage) UpdateSession(ctx context.Context, oldRefreshToken, newRefresh
 }
 
 // returns user id
-func (s *Storage) ProvideUser(ctx context.Context, refreshToken string) (int64, error) {
+func (s *Storage) ProvideUser(ctx context.Context, refreshToken string) (uuid.UUID, error) {
 	const op = "redis.ProvideUser"
 
 	res, err := s.client.Get(ctx, refreshToken).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return 0, fmt.Errorf("%s: %w", op, storage.ErrSessionNotFound)
+			return uuid.Nil, fmt.Errorf("%s: %w", op, storage.ErrSessionNotFound)
 		}
 
-		return 0, fmt.Errorf("%s: %w", op, err)
+		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	userId, err := strconv.ParseInt(res, 10, 64)
+	userId, err := uuid.Parse(res)
 	if err != nil {
-		return 0, fmt.Errorf("%s: %w", op, err)
+		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return userId, nil

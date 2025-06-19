@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"github.com/hesoyamTM/apphelper-sso/internal/models"
 	"github.com/hesoyamTM/apphelper-sso/internal/services"
 
@@ -17,8 +18,10 @@ type Auth interface {
 	Register(ctx context.Context, name, surname, login, password string) (models.JWTokens, error)
 	Login(ctx context.Context, login, password string) (models.JWTokens, error)
 	RefreshToken(ctx context.Context, refreshToken string) (models.JWTokens, error)
-	GetUser(ctx context.Context, id int64) (models.User, error)
-	GetUsers(ctx context.Context, ids []int64) ([]models.User, error)
+	GetUser(ctx context.Context, id uuid.UUID) (models.User, error)
+	GetUsers(ctx context.Context, ids []uuid.UUID) ([]models.User, error)
+	UpdateUser(ctx context.Context, user models.User) error
+	DeleteUser(ctx context.Context, id uuid.UUID) error
 }
 
 type serverAPI struct {
@@ -82,7 +85,10 @@ func (s *serverAPI) Register(ctx context.Context, req *ssov1.RegisterRequest) (*
 }
 
 func (s *serverAPI) GetUser(ctx context.Context, req *ssov1.GetUserRequest) (*ssov1.GetUserResponse, error) {
-	id := req.GetUserId()
+	id, err := uuid.Parse(req.GetUserId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid user id")
+	}
 
 	user, err := s.authService.GetUser(ctx, id)
 	if err != nil {
@@ -101,12 +107,20 @@ func (s *serverAPI) GetUser(ctx context.Context, req *ssov1.GetUserRequest) (*ss
 
 func (s *serverAPI) GetUsers(ctx context.Context, req *ssov1.GetUsersRequest) (*ssov1.GetUsersResponse, error) {
 	ids := req.GetUserIds()
+	idsUUID := make([]uuid.UUID, len(ids))
+	var err error
+	for i := range ids {
+		idsUUID[i], err = uuid.Parse(ids[i])
+		if err != nil {
+			continue
+		}
+	}
 
-	if err := validateGetUsers(ids); err != nil {
+	if err := validateGetUsers(idsUUID); err != nil {
 		return nil, status.Error(codes.InvalidArgument, "validation error")
 	}
 
-	users, err := s.authService.GetUsers(ctx, ids)
+	users, err := s.authService.GetUsers(ctx, idsUUID)
 	if err != nil {
 		if errors.Is(err, services.ErrUserNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "user not found")
@@ -119,7 +133,7 @@ func (s *serverAPI) GetUsers(ctx context.Context, req *ssov1.GetUsersRequest) (*
 
 	for i := range users {
 		usersResp[i] = &ssov1.User{
-			Id:      users[i].UserInfo.Id,
+			Id:      users[i].UserInfo.Id.String(),
 			Name:    users[i].Name,
 			Surname: users[i].Surname,
 		}

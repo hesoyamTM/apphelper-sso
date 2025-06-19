@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"log/slog"
-	"strconv"
 
 	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 
@@ -78,5 +77,5 @@ func (i *ServerInterceptor) authorize(ctx context.Context, method string) (conte
 		return nil, status.Error(codes.Unauthenticated, "access token is invalid")
 	}
 
-	return metadata.AppendToOutgoingContext(ctx, "uid", strconv.Itoa(int(uid))), nil
+	return metadata.AppendToOutgoingContext(ctx, "uid", uid), nil
 }

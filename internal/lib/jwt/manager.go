@@ -36,21 +36,21 @@ func NewTokens(user models.UserInfo, duration time.Duration, prKey *ecdsa.Privat
 	}, nil
 }
 
-func VerifyBearerToken(bearerToken string, publicKey *ecdsa.PublicKey) (int64, error) {
+func VerifyBearerToken(bearerToken string, publicKey *ecdsa.PublicKey) (string, error) {
 	token := strings.Split(bearerToken, " ")[1]
 
 	parsed, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
 		return publicKey, nil
 	})
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	claims := parsed.Claims.(jwt.MapClaims)
 
 	if int64(claims["exp"].(float64)) < time.Now().Unix() {
-		return 0, ErrUnauthorized
+		return "", ErrUnauthorized
 	}
 
-	return int64(claims["uid"].(float64)), nil
+	return claims["uid"].(string), nil
 }
