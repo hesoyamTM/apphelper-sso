@@ -24,3 +24,6 @@ report_client:
 
 schedule_client:
   addr: "localhost:49104"
+
+metrics:
+  port: 6004

@@ -8,6 +8,7 @@ import (
 	"github.com/hesoyamTM/apphelper-sso/internal/config"
 	"github.com/hesoyamTM/apphelper-sso/internal/grpc/auth"
 	"github.com/hesoyamTM/apphelper-sso/pkg/logger"
+	"github.com/hesoyamTM/apphelper-sso/pkg/metrics"
 
 	"google.golang.org/grpc"
 )
@@ -18,10 +19,13 @@ type App struct {
 	log        *logger.Logger
 	gRPCServer *grpc.Server
 	config     config.GRPC
+	metrics    *metrics.Metrics
 }
 
-func New(ctx context.Context, authServ auth.Auth, config config.GRPC) *App {
-	gRPCServer := grpc.NewServer(grpc.UnaryInterceptor(logger.LoggingInterceptor(ctx)))
+func New(ctx context.Context, authServ auth.Auth, metric *metrics.Metrics, config config.GRPC) *App {
+	gRPCServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(logger.LoggingInterceptor(ctx), metric.Interceptor()),
+	)
 
 	auth.RegisterServer(gRPCServer, authServ)
 
@@ -29,10 +33,13 @@ func New(ctx context.Context, authServ auth.Auth, config config.GRPC) *App {
 		log:        logger.GetLoggerFromCtx(ctx),
 		gRPCServer: gRPCServer,
 		config:     config,
+		metrics:    metric,
 	}
 }
 
 func (a *App) MustRun(ctx context.Context) {
+	go a.metrics.Start(ctx)
+
 	if err := a.run(ctx); err != nil {
 		panic(err)
 	}

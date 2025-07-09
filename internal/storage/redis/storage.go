@@ -65,7 +65,8 @@ func (s *Storage) UpdateSession(ctx context.Context, oldRefreshToken, newRefresh
 func (s *Storage) ProvideUser(ctx context.Context, refreshToken string) (uuid.UUID, error) {
 	const op = "redis.ProvideUser"
 
-	res, err := s.client.Get(ctx, refreshToken).Result()
+	var userId uuid.NullUUID
+	err := s.client.Get(ctx, refreshToken).Scan(&userId)
 	if err != nil {
 		if err == redis.Nil {
 			return uuid.Nil, fmt.Errorf("%s: %w", op, storage.ErrSessionNotFound)
@@ -74,10 +75,5 @@ func (s *Storage) ProvideUser(ctx context.Context, refreshToken string) (uuid.UU
 		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	userId, err := uuid.Parse(res)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	return userId, nil
+	return userId.UUID, nil
 }

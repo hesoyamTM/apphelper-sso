@@ -9,6 +9,7 @@ import (
 
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/psql"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/redis"
+	"github.com/hesoyamTM/apphelper-sso/pkg/metrics"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/joho/godotenv"
 )
@@ -20,9 +21,10 @@ type Config struct {
 	AccessTokenTTL  time.Duration `yaml:"access_token_ttl" env-required:"true" env:"ACCESS_TOKEN_TTL"`
 	RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl" env-required:"true" env:"REFRESH_TOKEN_TTL"`
 
-	Grpc  GRPC              `yaml:"grpc"`
-	Psql  psql.PsqlConfig   `yaml:"psql"`
-	Redis redis.RedisConfig `yaml:"redis"`
+	Grpc    GRPC                  `yaml:"grpc"`
+	Psql    psql.PsqlConfig       `yaml:"psql"`
+	Redis   redis.RedisConfig     `yaml:"redis"`
+	Metrics metrics.MetricsConfig `yaml:"metrics"`
 }
 
 type GRPC struct {

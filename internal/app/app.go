@@ -12,6 +12,7 @@ import (
 	"github.com/hesoyamTM/apphelper-sso/internal/services/auth"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/psql"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/redis"
+	"github.com/hesoyamTM/apphelper-sso/pkg/metrics"
 )
 
 type App struct {
@@ -49,7 +50,12 @@ func New(ctx context.Context, cfg *config.Config) *App {
 		privKey,
 	)
 
-	grpcApp := grpcapp.New(ctx, authService, cfg.Grpc)
+	grpcMetrics, err := metrics.NewMetrics(ctx, cfg.Metrics)
+	if err != nil {
+		panic(err)
+	}
+
+	grpcApp := grpcapp.New(ctx, authService, grpcMetrics, cfg.Grpc)
 
 	return &App{
 		GRPCApp: grpcApp,

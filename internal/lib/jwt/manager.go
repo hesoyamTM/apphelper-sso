@@ -3,6 +3,7 @@ package jwt
 import (
 	"crypto/ecdsa"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -37,19 +38,21 @@ func NewTokens(user models.UserInfo, duration time.Duration, prKey *ecdsa.Privat
 }
 
 func VerifyBearerToken(bearerToken string, publicKey *ecdsa.PublicKey) (string, error) {
+	const op = "jwt.VerifyBearerToken"
+
 	token := strings.Split(bearerToken, " ")[1]
 
 	parsed, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
 		return publicKey, nil
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	claims := parsed.Claims.(jwt.MapClaims)
 
 	if int64(claims["exp"].(float64)) < time.Now().Unix() {
-		return "", ErrUnauthorized
+		return "", fmt.Errorf("%s: %w", op, ErrUnauthorized)
 	}
 
 	return claims["uid"].(string), nil
