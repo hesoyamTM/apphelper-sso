@@ -17,11 +17,16 @@ import (
 type Auth interface {
 	Register(ctx context.Context, name, surname, login, password string) (models.JWTokens, error)
 	Login(ctx context.Context, login, password string) (models.JWTokens, error)
+	Logout(ctx context.Context, refreshToken string) error
 	RefreshToken(ctx context.Context, refreshToken string) (models.JWTokens, error)
 	GetUser(ctx context.Context, id uuid.UUID) (models.User, error)
 	GetUsers(ctx context.Context, ids []uuid.UUID) ([]models.User, error)
-	UpdateUser(ctx context.Context, user models.User) error
+	UpdateUser(ctx context.Context, user models.UserInfo) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
+	ChangePassword(ctx context.Context, email, newPassword, token string) error
+	SendVerificationEmail(ctx context.Context, email string) error
+	SendPasswordResetEmail(ctx context.Context, email string) error
+	VerifyEmail(ctx context.Context, email, code string) error
 }
 
 type serverAPI struct {
@@ -60,10 +65,10 @@ func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.
 }
 
 func (s *serverAPI) Register(ctx context.Context, req *ssov1.RegisterRequest) (*ssov1.RegisterResponse, error) {
-	login := req.Login
-	pass := req.Password
-	name := req.Name
-	surname := req.Surname
+	login := req.GetLogin()
+	pass := req.GetPassword()
+	name := req.GetName()
+	surname := req.GetSurname()
 
 	if err := validateRegister(ctx, name, surname, login, pass); err != nil {
 		return nil, status.Error(codes.InvalidArgument, "validation error")
@@ -167,4 +172,120 @@ func (s *serverAPI) RefreshToken(ctx context.Context, req *ssov1.RefreshTokenReq
 		AccessToken:  tokens.AccessToken,
 		RefreshToken: tokens.RefreshToken,
 	}, nil
+}
+
+func (s *serverAPI) UpdateUser(ctx context.Context, req *ssov1.UpdateUserRequest) (*ssov1.UpdateUserResponse, error) {
+	id, err := uuid.Parse(req.GetUserId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid user id")
+	}
+
+	// TODO: check user authentication
+
+	user := models.UserInfo{
+		Id:      id,
+		Name:    req.GetName(),
+		Surname: req.GetSurname(),
+	}
+
+	if err := validateUpdateUser(ctx, user); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "validation error")
+	}
+
+	if err := s.authService.UpdateUser(ctx, user); err != nil {
+		if errors.Is(err, services.ErrUserNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "user not found")
+		}
+
+		return nil, status.Error(codes.Internal, "Internal error")
+	}
+
+	return &ssov1.UpdateUserResponse{}, nil
+}
+
+func (s *serverAPI) DeleteUser(ctx context.Context, req *ssov1.DeleteUserRequest) (*ssov1.DeleteUserResponse, error) {
+	id, err := uuid.Parse(req.GetUserId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid user id")
+	}
+
+	// TODO: check user authentication
+
+	if err := s.authService.DeleteUser(ctx, id); err != nil {
+		if errors.Is(err, services.ErrUserNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "user not found")
+		}
+
+		return nil, status.Error(codes.Internal, "Internal error")
+	}
+
+	return &ssov1.DeleteUserResponse{}, nil
+}
+
+func (s *serverAPI) Logout(ctx context.Context, req *ssov1.LogoutRequest) (*ssov1.LogoutResponse, error) {
+	token := req.GetRefreshToken()
+
+	if err := validateLogout(ctx, token); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "validation error")
+	}
+
+	if err := s.authService.Logout(ctx, token); err != nil {
+		if errors.Is(err, services.ErrNotAuthorized) {
+			return nil, status.Error(codes.Unauthenticated, "not authorized")
+		}
+
+		return nil, status.Error(codes.Internal, "Internal error")
+	}
+
+	return &ssov1.LogoutResponse{}, nil
+}
+
+func (s *serverAPI) ChangePassword(ctx context.Context, req *ssov1.ChangePasswordRequest) (*ssov1.ChangePasswordResponse, error) {
+	email := req.GetEmail()
+	newPassword := req.GetNewPassword()
+	token := req.GetToken()
+
+	if err := validateChangePassword(ctx, newPassword, token); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "validation error")
+	}
+
+	if err := s.authService.ChangePassword(ctx, email, newPassword, token); err != nil {
+		if errors.Is(err, services.ErrNotAuthorized) {
+			return nil, status.Error(codes.Unauthenticated, "not authorized")
+		}
+		if errors.Is(err, services.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid credentials")
+		}
+		if errors.Is(err, services.ErrUserNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "user not found")
+		}
+
+		return nil, status.Error(codes.Internal, "Internal error")
+	}
+
+	return &ssov1.ChangePasswordResponse{}, nil
+}
+
+func (s *serverAPI) SendVerificationEmail(ctx context.Context, req *ssov1.SendVerificationEmailRequest) (*ssov1.SendVerificationEmailResponse, error) {
+	if err := s.authService.SendVerificationEmail(ctx, req.GetEmail()); err != nil {
+		if errors.Is(err, services.ErrUserNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "user not found")
+		}
+
+		return nil, status.Error(codes.Internal, "Internal error")
+	}
+
+	return &ssov1.SendVerificationEmailResponse{}, nil
+}
+
+func (s *serverAPI) VerifyEmail(ctx context.Context, req *ssov1.VerifyEmailRequest) (*ssov1.VerifyEmailResponse, error) {
+	if err := s.authService.VerifyEmail(ctx, req.GetEmail(), req.GetCode()); err != nil {
+		if errors.Is(err, services.ErrNotAuthorized) {
+			return nil, status.Error(codes.Unauthenticated, "not authorized")
+		}
+
+		return nil, status.Error(codes.Internal, "Internal error")
+	}
+
+	return &ssov1.VerifyEmailResponse{}, nil
 }

@@ -1,11 +1,14 @@
 env: "local"
 keys_update_interval: 24h
 
+access_token_ttl: 15m
+refresh_token_ttl: 43200m #30 days
+code_ttl: 10m
+token_ttl: 1h
+
 grpc:
   host: "0.0.0.0"
   port: 6003
-  access_token_ttl: 15m
-  refresh_token_ttl: 43200m #30 days
 
 psql:
   host: "localhost"
@@ -19,11 +22,19 @@ redis:
   port: 6379
   password: "1234"
 
-report_client:
-  addr: "localhost:49102"
+observability:
+  traces:
+    endpoint: "localhost:4317"
+    service_name: "apphelper-sso"
+    service_version: "1.0.0"
+  metrics:
+    port: 6004
 
-schedule_client:
-  addr: "localhost:49104"
-
-metrics:
-  port: 6004
+redpanda:
+  brokers:
+    - "localhost:9092"
+  group_id: "apphelper-sso"
+  topics:
+    - "sso.auth.registered"
+    - "sso.auth.password.changed"
+    - "sso.auth.code.updated"

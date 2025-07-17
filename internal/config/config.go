@@ -7,9 +7,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/hesoyamTM/apphelper-notification/pkg/redpanda"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/psql"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/redis"
-	"github.com/hesoyamTM/apphelper-sso/pkg/metrics"
+	"github.com/hesoyamTM/apphelper-sso/pkg/observability"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/joho/godotenv"
 )
@@ -20,11 +21,14 @@ type Config struct {
 
 	AccessTokenTTL  time.Duration `yaml:"access_token_ttl" env-required:"true" env:"ACCESS_TOKEN_TTL"`
 	RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl" env-required:"true" env:"REFRESH_TOKEN_TTL"`
+	CodeTTL         time.Duration `yaml:"code_ttl" env-required:"true" env:"CODE_TTL"`
+	TokenTTL        time.Duration `yaml:"token_ttl" env-required:"true" env:"TOKEN_TTL"`
 
-	Grpc    GRPC                  `yaml:"grpc"`
-	Psql    psql.PsqlConfig       `yaml:"psql"`
-	Redis   redis.RedisConfig     `yaml:"redis"`
-	Metrics metrics.MetricsConfig `yaml:"metrics"`
+	Grpc          GRPC                     `yaml:"grpc"`
+	Psql          psql.PsqlConfig          `yaml:"psql"`
+	Redis         redis.RedisConfig        `yaml:"redis"`
+	Observability observability.OtelConfig `yaml:"observability"`
+	Redpanda      redpanda.RedpandaConfig  `yaml:"redpanda"`
 }
 
 type GRPC struct {

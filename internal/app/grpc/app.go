@@ -8,9 +8,11 @@ import (
 	"github.com/hesoyamTM/apphelper-sso/internal/config"
 	"github.com/hesoyamTM/apphelper-sso/internal/grpc/auth"
 	"github.com/hesoyamTM/apphelper-sso/pkg/logger"
-	"github.com/hesoyamTM/apphelper-sso/pkg/metrics"
+	"go.opentelemetry.io/otel"
 
 	"google.golang.org/grpc"
+	oteltracing "google.golang.org/grpc/experimental/opentelemetry"
+	"google.golang.org/grpc/stats/opentelemetry"
 )
 
 const ()
@@ -19,12 +21,23 @@ type App struct {
 	log        *logger.Logger
 	gRPCServer *grpc.Server
 	config     config.GRPC
-	metrics    *metrics.Metrics
 }
 
-func New(ctx context.Context, authServ auth.Auth, metric *metrics.Metrics, config config.GRPC) *App {
+func New(ctx context.Context, authServ auth.Auth, config config.GRPC) *App {
+	so := opentelemetry.ServerOption(opentelemetry.Options{
+		MetricsOptions: opentelemetry.MetricsOptions{
+			MeterProvider: otel.GetMeterProvider(),
+			Metrics:       opentelemetry.DefaultMetrics(),
+		},
+		TraceOptions: oteltracing.TraceOptions{
+			TracerProvider:    otel.GetTracerProvider(),
+			TextMapPropagator: otel.GetTextMapPropagator(),
+		},
+	})
+
 	gRPCServer := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(logger.LoggingInterceptor(ctx), metric.Interceptor()),
+		so,
+		grpc.UnaryInterceptor(logger.LoggingInterceptor(ctx)),
 	)
 
 	auth.RegisterServer(gRPCServer, authServ)
@@ -33,13 +46,10 @@ func New(ctx context.Context, authServ auth.Auth, metric *metrics.Metrics, confi
 		log:        logger.GetLoggerFromCtx(ctx),
 		gRPCServer: gRPCServer,
 		config:     config,
-		metrics:    metric,
 	}
 }
 
 func (a *App) MustRun(ctx context.Context) {
-	go a.metrics.Start(ctx)
-
 	if err := a.run(ctx); err != nil {
 		panic(err)
 	}

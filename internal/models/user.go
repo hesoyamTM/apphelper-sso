@@ -10,7 +10,7 @@ type UserInfo struct {
 
 type UserAuth struct {
 	Id       uuid.UUID
-	Login    string
+	Email    string
 	PassHash []byte
 }
 

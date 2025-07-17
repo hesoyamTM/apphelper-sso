@@ -77,3 +77,13 @@ func (s *Storage) ProvideUser(ctx context.Context, refreshToken string) (uuid.UU
 
 	return userId.UUID, nil
 }
+
+func (s *Storage) DeleteSession(ctx context.Context, refreshToken string) error {
+	const op = "redis.DeleteSession"
+
+	if err := s.client.Del(ctx, refreshToken).Err(); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}

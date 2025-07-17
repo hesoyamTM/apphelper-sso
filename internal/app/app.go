@@ -4,24 +4,20 @@ import (
 	"context"
 
 	grpcapp "github.com/hesoyamTM/apphelper-sso/internal/app/grpc"
-	"github.com/hesoyamTM/apphelper-sso/internal/clients/report"
-	"github.com/hesoyamTM/apphelper-sso/internal/clients/schedule"
+	"github.com/hesoyamTM/apphelper-sso/internal/clients/redpanda"
 	"github.com/hesoyamTM/apphelper-sso/internal/config"
 	"github.com/hesoyamTM/apphelper-sso/internal/lib/jwt"
 	"github.com/hesoyamTM/apphelper-sso/internal/migrations"
 	"github.com/hesoyamTM/apphelper-sso/internal/services/auth"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/psql"
 	"github.com/hesoyamTM/apphelper-sso/internal/storage/redis"
-	"github.com/hesoyamTM/apphelper-sso/pkg/metrics"
 )
 
-type App struct {
-	GRPCApp *grpcapp.App
-}
+const migrationsDir = "migrations"
 
-type Clients struct {
-	ReportClient   *report.Client
-	ScheduleClient *schedule.Client
+type App struct {
+	GRPCApp        *grpcapp.App
+	RedpandaClient *redpanda.RedPandaClient
 }
 
 func New(ctx context.Context, cfg *config.Config) *App {
@@ -30,7 +26,15 @@ func New(ctx context.Context, cfg *config.Config) *App {
 		panic(err)
 	}
 
-	if err := migrations.RunMigrations(ctx, cfg.Psql); err != nil {
+	migrationCfg := migrations.Config{
+		Host:     cfg.Psql.Host,
+		Port:     cfg.Psql.Port,
+		User:     cfg.Psql.User,
+		Password: cfg.Psql.Password,
+		DB:       cfg.Psql.DB,
+	}
+
+	if err := migrations.RunMigrations(ctx, migrationCfg, migrationsDir); err != nil {
 		panic(err)
 	}
 
@@ -41,23 +45,33 @@ func New(ctx context.Context, cfg *config.Config) *App {
 		panic(err)
 	}
 
-	authService := auth.New(
-		ctx,
-		psqlDB,
-		rDB,
-		cfg.AccessTokenTTL,
-		cfg.RefreshTokenTTL,
-		privKey,
-	)
-
-	grpcMetrics, err := metrics.NewMetrics(ctx, cfg.Metrics)
+	redpandaClient, err := redpanda.NewRedPandaClient(ctx, cfg.Redpanda)
 	if err != nil {
 		panic(err)
 	}
 
-	grpcApp := grpcapp.New(ctx, authService, grpcMetrics, cfg.Grpc)
+	authService := auth.New(
+		ctx,
+		redpandaClient,
+		psqlDB,
+		rDB,
+		rDB,
+		rDB,
+		cfg.AccessTokenTTL,
+		cfg.RefreshTokenTTL,
+		cfg.CodeTTL,
+		cfg.TokenTTL,
+		privKey,
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	grpcApp := grpcapp.New(ctx, authService, cfg.Grpc)
 
 	return &App{
-		GRPCApp: grpcApp,
+		GRPCApp:        grpcApp,
+		RedpandaClient: redpandaClient,
 	}
 }
